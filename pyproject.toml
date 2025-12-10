@@ -1,0 +1,17 @@
+[project]
+name = "personal-site-rag"
+version = "0.1.0"
+description = "RAG server of a Hufo personal site"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.124.0",
+    "google-genai>=1.54.0",
+    "python-dotenv>=1.2.1",
+    "sentence-transformers>=5.1.2",
+]
+
+[dependency-groups]
+dev = [
+    "uvicorn[standard]>=0.38.0",
+]
