@@ -1,12 +1,17 @@
 
+import logging
 from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
-import json
-from .vector_store_interface import VectorStoreInterface
-from core.config import FILE_CACHE_DIR
-from infrastructure.ingestion.parser import load_index_json_file
-from domain.models import Document, SearchResult
+
+from app.infrastructure.repositories.vector_store_interface import VectorStoreInterface
+from app.core.config import FILE_CACHE_DIR
+from app.domain.models import Document, SearchResult
+
+logger = logging.getLogger(__name__)
+
+# Expect future extension to use vector DB through VectorStoreInterface
+# Here a simple file-based vector store is enough for current purpose
 
 def cosine_similarity(vec1, vec2):
     dot_product = np.dot(vec1, vec2)
@@ -17,7 +22,7 @@ def cosine_similarity(vec1, vec2):
     return dot_product / (norm1 * norm2)
 
 class FileVectorStore(VectorStoreInterface):
-    """json for document and numpy for vector"""
+    """json document + numpy vector"""
     def __init__(self, base_path:str = FILE_CACHE_DIR):
         self.base_path = Path(base_path)
         self.doc_map = dict() # id->doc
@@ -30,6 +35,7 @@ class FileVectorStore(VectorStoreInterface):
         return id
 
     def search(self, query_vector:NDArray, limit:int) -> list[SearchResult]:
+        logger.debug(f'FileVectorStore search called with query vector dim: {query_vector.shape} and limit: {limit}')
         score_list = []
         for id, doc_vector in self.embedding_map.items():
             score = cosine_similarity(query_vector, doc_vector)
@@ -40,6 +46,7 @@ class FileVectorStore(VectorStoreInterface):
             rank = i + 1
             doc = self.doc_map[id]
             res.append(SearchResult(document=doc, score=score, rank=rank))
+        logger.debug(f'FileVectorStore search returning {len(res)} results')
         return res 
 
     def __len__(self) -> int:

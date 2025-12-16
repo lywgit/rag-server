@@ -4,11 +4,15 @@ from pydantic import (
     BaseModel,
     Field
 )
+from app.core.config import SEARCH_LIMIT
+from typing import Literal
 
-class HealthRequest:
-    pass   
 
-class QueryRequest:
-    prompt:str = Field(..., description="The user's query prompt")
-    top_k:int = Field(3, description="Number of top relevant sources to retrieve")  
+class SearchRequest(BaseModel):
+    query:str = Field(..., description="User's input")
+    top_k:int = Field(default=SEARCH_LIMIT, description="Number of top relevant sources to retrieve") 
+    method: Literal["semantic", "hybrid", "keyword"] = Field(default="semantic", description="Search method: keyword(bm25), semantic, hybrid")
+
+class RagResponse(BaseModel):
+    answer: str
     

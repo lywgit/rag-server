@@ -1,24 +1,27 @@
+# from pydantic import BaseModel
+# from dataclasses import dataclass
+
+# @dataclass
+# class Document:
+#     id:str
+#     content:str
+#     metadata:dict # metadata of individual document
+
+# @dataclass
+# class SearchResult:
+#     document:Document
+#     score:float
+#     rank:int
+
 from pydantic import BaseModel
-from dataclasses import dataclass
+from typing import Dict
 
-@dataclass
-class Document:
-    id:str
-    content:str
-    metadata:dict # metadata of individual document
+class Document(BaseModel):
+    id: str
+    content: str
+    metadata: Dict
 
-@dataclass
-class SearchResult:
-    document:Document
-    score:float
-    rank:int
-    
-  
-    
-
-class QueryRequest(BaseModel):
-    pass
-
-class QueryResponse(BaseModel):
-    pass
-    
+class SearchResult(BaseModel):
+    document: Document
+    score: float
+    rank: int

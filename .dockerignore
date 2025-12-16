@@ -1,0 +1,13 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+.env
+.env.local
+*.log
+.DS_Store
+tests/
+README.md
+ROADMAP.md

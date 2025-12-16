@@ -1,56 +1,67 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+from app.api.query import query_router
+from app.api.health import healthz_router
+from app.services.rag_service import RagService
+from app.infrastructure.retriever import FileRetriever
+from app.infrastructure.repositories.file_vector_store import FileVectorStore
+from app.infrastructure.repositories.bm25_keyword_store import BM25KeywordStore
+from app.infrastructure.repositories.tokenizers import JiebaTokenizer
+from app.infrastructure.clients.gemini_client import AsyncGeminiClient
+from app.infrastructure.embeddings.embedder import SentenceTransformerEmbedder
 
-from api.query import query_router
-from api.healthz import healthz_router
-from services.rag_service import RagService
-from infrastructure.retriever import FileRetriever
-from infrastructure.repositories.file_vector_store import FileVectorStore
-from infrastructure.repositories.keyword_store_interface import BM25Store
-from infrastructure.clients.gemini_client import GeminiClient
-from infrastructure.embeddings.embedder import SentenceTransformerEmbedder
-from core.config import DEFAULT_GEMINI_MODEL, DEFAULT_SENTENCE_ENCODER_MODEL
+from app.core.config import (
+    GEMINI_MODEL,
+    GEMINI_API_KEY,
+    SENTENCE_ENCODER_MODEL,
+    INDEX_JSON_URL
+    )
+from app.infrastructure.ingestion.parser import load_documents
+
+# Initialize service 
+logger = logging.getLogger(__name__)
+logger.info("Initializing service")
 
 retriever = FileRetriever(
-    SentenceTransformerEmbedder(DEFAULT_SENTENCE_ENCODER_MODEL),
+    SentenceTransformerEmbedder(SENTENCE_ENCODER_MODEL),
     FileVectorStore(),
-    BM25Store()
+    BM25KeywordStore(JiebaTokenizer())
     )
-llm_client = GeminiClient()
+llm_client = AsyncGeminiClient(GEMINI_MODEL, GEMINI_API_KEY)
 rag_service = RagService(retriever, llm_client)
 
-from infrastructure.ingestion.parser import load_index_json_file
+logger.info(f"Loading index.json from {INDEX_JSON_URL}")
 
-# Lifespan 事件處理
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 啟動邏輯
     try:
-        docs = load_index_json_file()
+        docs = load_documents(INDEX_JSON_URL)
         rag_service.build(docs)
-        print("RAG Service started")
+        logger.info("RAG Service started")
     except Exception as e:
-        print(f"Failed to build RAG Service: {e}")
+        logger.exception(f"Failed to build RAG Service: {e}", exc_info=True)
         raise
-    
     yield
-    
-    # 關閉邏輯
-    print("✓ RAG Service shutdown")
+       
+    logger.info("RAG Service shutdown")
 
 app = FastAPI(lifespan=lifespan)
 app.state.rag_service = rag_service
-app.include_router(healthz_router)
+app.state.llm_client = llm_client
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[""],  # Or specify your domain: ["https://yourdomain.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(query_router)
+app.include_router(healthz_router)
 
-
-# @app.get("/")
-# def read_root():
-#     return {"Hello": "World"}
-
-# @app.get("/items/{item_id}")
-# def read_item(item_id: int, q:str|None = None):
-#     return {"item_id": item_id, "q": q}
 
 if __name__ == "__main__":
     import uvicorn

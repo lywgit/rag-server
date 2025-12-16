@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from numpy.typing import NDArray
-from domain.models import Document,SearchResult
+from app.domain.models import Document,SearchResult
 
 class VectorStoreInterface(ABC):
     # Core retrieval functions

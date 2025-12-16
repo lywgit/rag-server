@@ -1,5 +1,11 @@
 from abc import ABC, abstractmethod
-from domain.models import Document, SearchResult
+from app.domain.models import Document, SearchResult
+
+class TokenizerInterface(ABC):
+    @abstractmethod
+    def tokenize(self, text:str) -> list[str]:
+        raise NotImplementedError
+
 
 class KeywordStoreInterface(ABC):
     # Core retrieval functions
@@ -24,25 +30,3 @@ class KeywordStoreInterface(ABC):
     def load_index(self):
         raise NotImplementedError
 
-
-class BM25Store(KeywordStoreInterface):
-    def __init__(self) -> None:
-        pass
-        
-
-    def build_index(self, documents:list[Document]):
-        pass
-
-    def search(self, query:str, limit:int) -> list[SearchResult]:
-        raise NotImplementedError
-
-
-    def retrieve_by_id(self, id) -> Document:
-        raise NotImplementedError
-    
-
-    def save_index(self):
-        raise NotImplementedError
-    
-    def load_index(self):
-        raise NotImplementedError
