@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Required Secrets
-GEMINI_API_KEY =  os.environ.get("GEMINI_API_KEY")
+GEMINI_API_KEY =  os.environ.get("GEMINI_API_KEY","").strip()
 
 # Required Variable 
-INDEX_JSON_URL = os.environ.get("INDEX_JSON_URL","")
+INDEX_JSON_URL = os.environ.get("INDEX_JSON_URL","").strip()
 if not INDEX_JSON_URL.startswith("http"):
     INDEX_JSON_URL =  str(Path(INDEX_JSON_URL).resolve())
 

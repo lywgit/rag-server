@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.api.query import query_router
-from app.api.health import healthz_router
+from app.api.health import health_router
 from app.services.rag_service import RagService
 from app.infrastructure.retriever import FileRetriever
 from app.infrastructure.repositories.file_vector_store import FileVectorStore
@@ -53,14 +53,14 @@ app.state.llm_client = llm_client
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[""],  # Or specify your domain: ["https://yourdomain.com"]
+    allow_origins=["*"],  # Or specify your domain: ["https://yourdomain.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(query_router)
-app.include_router(healthz_router)
+app.include_router(health_router)
 
 
 if __name__ == "__main__":

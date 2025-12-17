@@ -21,14 +21,16 @@ logger = logging.getLogger(__name__)
 def fetch_index_json(path:str) -> list[dict]:
     """Fetch index.json from local file or url"""
     if path.startswith("http://") or path.startswith("https://"):
+        logger.debug(f"Fetching index.json from remote url: {path}")
         import requests
         response = requests.get(path)
         response.raise_for_status()
         items = response.json()
     else:
+        logger.debug(f"Fetching index.json from local file: {path}")
         with open(path, "r") as f:
             items = json.load(f)
-    logger.debug(f"Fetching index.json from: {path}, got {len(items)} items")
+    logger.debug(f"Fetched. Got {len(items)} items")
     return items
 
 def format_documents(items) -> list[Document]:

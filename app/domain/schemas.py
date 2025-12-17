@@ -11,7 +11,7 @@ from typing import Literal
 class SearchRequest(BaseModel):
     query:str = Field(..., description="User's input")
     top_k:int = Field(default=SEARCH_LIMIT, description="Number of top relevant sources to retrieve") 
-    method: Literal["semantic", "hybrid", "keyword"] = Field(default="semantic", description="Search method: keyword(bm25), semantic, hybrid")
+    method: Literal["semantic", "keyword", "hybrid"] = Field(default="hybrid", description="Search method: keyword (bm25), semantic, hybrid")
 
 class RagResponse(BaseModel):
     answer: str

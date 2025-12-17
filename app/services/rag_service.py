@@ -11,6 +11,10 @@ class RagService:
         self.llm_client = llm_client
         self._is_built = False
     
+    @property
+    def is_ready(self) -> bool:
+        return self._is_built
+
     def build(self, documents:list[Document]):
         self.retriever.build(documents)
         self._is_built = True

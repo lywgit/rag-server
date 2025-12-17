@@ -1,29 +1,14 @@
-import json
 import logging
 from http import HTTPStatus
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from app.infrastructure.clients.llm_client_interface import AsyncLLMClientInterface
-from app.services.rag_service import RagService
 from app.domain.schemas import SearchRequest
-from app.core.config import MAX_USER_INPUT, SEARCH_LIMIT
+
+from app.api.utils import get_llm_client, get_rag_service, truncate_user_input
 
 logger = logging.getLogger(__name__)
 
-def get_llm_client(request:Request) -> RagService:
-    return request.app.state.llm_client
-
-def get_rag_service(request:Request) -> RagService:
-    return request.app.state.rag_service
-
 query_router = APIRouter(prefix="/query", tags=["query"])
-
-# utility functions
-def truncate_user_input(query:str, max_len:int = MAX_USER_INPUT) -> str:
-    if len(query) > max_len:
-        logger.warning(f"User input text truncated: {len(query)} -> {max_len}")
-        query = query[:max_len]
-    return query
-
 
 # Ping llm as health check of underlying API service
 @query_router.get('/llm/hello', status_code=201, description="Test LLM client by sending a 'hello' message")
