@@ -78,4 +78,7 @@ class RagService:
         """).strip()
 
         response: dict[str,str] = await self.llm_client.generate(prompt)
-        return {"search_result": search_result, "answer":response.get("answer","")}
+        return {
+            "search_result": search_result, 
+            "answer":response.get("answer",""), 
+            "metadata": response.get("metadata",{})}

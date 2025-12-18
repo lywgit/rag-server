@@ -5,6 +5,7 @@ description = "RAG server of a Hugo personal site"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "apscheduler>=3.11.1",
     "fastapi>=0.124.0",
     "google-genai>=1.54.0",
     "jieba>=0.42.1",

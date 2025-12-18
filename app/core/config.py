@@ -27,10 +27,10 @@ INDEX_JSON_URL = os.environ.get("INDEX_JSON_URL","").strip()
 if not INDEX_JSON_URL.startswith("http"):
     INDEX_JSON_URL =  str(Path(INDEX_JSON_URL).resolve())
 
-# Optional settings  (can be overridden by env variable)\
+# Optional settings  (can be overridden by corresponding env variable)
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 DEFAULT_SENTENCE_ENCODER_MODEL = "all-MiniLM-L6-v2"
-DEFAULT_MAX_USER_INPUT = 1000
+DEFAULT_MAX_USER_INPUT = 500  # length limit of query (in characters)
 DEFAULT_FILE_CACHE_DIR = "./cache"
 DEFAULT_SEARCH_LIMIT = 10
 
@@ -39,7 +39,7 @@ SENTENCE_ENCODER_MODEL = os.environ.get("SENTENCE_ENCODER_MODEL", DEFAULT_SENTEN
 MAX_USER_INPUT = int(os.environ.get("MAX_USER_INPUT", DEFAULT_MAX_USER_INPUT))
 FILE_CACHE_DIR = str(Path(os.environ.get("FILE_CACHE_DIR", DEFAULT_FILE_CACHE_DIR)).resolve())
 SEARCH_LIMIT = int(os.environ.get("SEARCH_LIMIT", DEFAULT_SEARCH_LIMIT))
-
+CORS_DOMAIN_NAME = os.environ.get("CORS_DOMAIN_NAME", "*").strip()
 
 # Settings (no associated env variable)
 BM25_K1 = 1.5
