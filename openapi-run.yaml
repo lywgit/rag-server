@@ -1,0 +1,277 @@
+swagger: '2.0'
+info:
+  title: Personal Site RAG API
+  description: RAG API with search and query capabilities backed by Cloud Run
+  version: 1.0.0
+
+host: gateway-asia-a331xntq.an.gateway.dev
+schemes:
+  - https
+produces:
+  - application/json
+consumes:
+  - application/json
+
+# Default backend for all operations (can be overridden per-operation)
+x-google-backend:
+  address: https://rag-server-790356636638.asia-east1.run.app
+  protocol: h2
+  jwt_audience: https://rag-server-790356636638.asia-east1.run.app
+
+# CORS setup that allow Options requests (no use in this case)
+x-google-endpoints:
+  - name: "gateway-asia-a331xntq.an.gateway.dev"
+    allowCors: True
+
+# Quota and limits
+x-google-management:
+  metrics:
+    - name: "general_requests"
+      displayName: "General API Requests"
+      valueType: INT64
+      metricKind: DELTA
+    - name: "search_requests"
+      displayName: "Search API Requests"
+      valueType: INT64
+      metricKind: DELTA
+    - name: "llm_requests"
+      displayName: "LLM Requests"
+      valueType: INT64
+      metricKind: DELTA
+  quota:
+    limits:
+      # Define the limit or the read-requests metric.
+      - name: general-limits
+        metric: "general_requests"
+        unit: "1/min/{project}"
+        values:
+          STANDARD: 100
+      - name: search-limits
+        metric: "search_requests"
+        unit: "1/min/{project}"
+        values:
+          STANDARD: 30       
+      - name: "llm-limit"
+        metric: "llm_requests"
+        unit: "1/min/{project}"
+        values:
+          STANDARD: 10
+
+
+# some definitions
+definitions:
+  HealthResponse:
+    type: object
+    properties:
+      status:
+        type: string
+        example: ok
+  
+  SearchRequest:
+    type: object
+    required:
+      - query
+    properties:
+      query:
+        type: string
+        description: User search query
+      top_k:
+        type: integer
+        default: 5
+        description: Number of top results to return
+      method:
+        type: string
+        enum: [keyword, semantic, hybrid]
+        default: hybrid
+        description: Search method
+  
+  SearchResponse:
+    type: object
+    properties:
+      search_result:
+        type: array
+        items:
+          type: object
+  
+  RagResponse:
+    type: object
+    properties:
+      search_result:
+        type: array
+        items:
+          type: object
+      answer:
+        type: string
+        description: Generated answer from LLM
+  
+  LLMResponse:
+    type: object
+    properties:
+      answer:
+        type: string
+
+  ErrorResponse:
+    type: object
+    properties:
+      detail:
+        type: string
+
+# path templates
+paths:
+  # The Cloud Run backend needs JWT even for OPTIONS requests
+  # Therefore explicitly define a catch-all OPTIONS path
+  /{relative_path=**}: # Catch-all path for CORS preflight
+    parameters:
+      - in: path
+        name: relative_path
+        type: string
+        required: true
+    options:
+      summary: Global CORS preflight for all queries
+      operationId: globalQueryCors
+      security: []  # Disable Auth
+      x-google-backend:
+        address: https://rag-server-790356636638.asia-east1.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+        jwt_audience: https://rag-server-790356636638.asia-east1.run.app  # Still require valid JWT
+      responses: 
+        '204':
+          description: Preflight OK
+          headers:
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+      x-google-quota:
+        metricCosts:
+          "general_requests": 1
+
+  /:
+    head:
+      summary: Service liveness check (HEAD)
+      description: Lightweight liveness check with no response body
+      operationId: serviceLivenessHead
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is reachable
+    get:
+      summary: Service readiness check
+      description: Returns service readiness status
+      operationId: serviceReadinessGet
+      tags:
+        - health
+      responses:
+        '200':
+          description: Service is ready
+          schema:
+            $ref: '#/definitions/HealthResponse'
+        '503':
+          description: Service is not ready
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      x-google-quota:
+        metricCosts:
+          "general_requests": 1
+  
+  /query/llm/hello:
+    get:
+      summary: Test LLM client connection
+      description: Send a hello message to test LLM client
+      operationId: helloLLM
+      tags:
+        - query
+      responses:
+        '201':
+          description: LLM response
+          schema:
+            type: object
+        '500':
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      x-google-quota:
+        metricCosts:
+          "llm_requests": 1
+  
+  /query/llm:
+    post:
+      summary: Send query to LLM
+      description: Direct query to LLM without RAG
+      operationId: llmQuery
+      tags:
+        - query
+      parameters:
+        - in: query
+          name: query
+          type: string
+          required: true
+          description: Query text to send to LLM
+      responses:
+        '201':
+          description: LLM generated response
+          schema:
+            $ref: '#/definitions/LLMResponse'
+        '500':
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      x-google-quota:
+        metricCosts:
+          "llm_requests": 1
+  
+  /query/search:
+    post:
+      summary: Search documents
+      description: Search through documents using BM25, semantic, or hybrid methods
+      operationId: searchQuery
+      tags:
+        - query
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/SearchRequest'
+      responses:
+        '201':
+          description: Search results
+          schema:
+            $ref: '#/definitions/SearchResponse'
+        '500':
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      x-google-quota:
+        metricCosts:
+          "search_requests": 1
+
+  /query/rag:
+    post:
+      summary: RAG query with generated answer
+      description: Search documents and generate answer using LLM with retrieved context
+      operationId: ragQuery
+      tags:
+        - query
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/SearchRequest'
+      responses:
+        '201':
+          description: Search results with generated answer
+          schema:
+            $ref: '#/definitions/RagResponse'
+        '500':
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      x-google-quota:
+        metricCosts:
+          "llm_requests": 1
+          "search_requests": 1
