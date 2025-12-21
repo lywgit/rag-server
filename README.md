@@ -1,8 +1,47 @@
-# RAG Server
+# Personal RAG Server
 
 A retrieval-augmented generation (RAG) API built with FastAPI, designed to serve semantic and keyword-based search over document indexes with LLM-powered answer generation. This server ingests a JSON index of documents at startup, builds vector and keyword indexes, and exposes endpoints for search and question-answering workflows.
 
 Configured for deployment on Google Cloud Run with API Gateway support, it includes quota management, structured logging, and environment-based configuration.
+
+## Author's Note
+
+- This application powers my personal site's ["Ask about the site"](https://lywgit.github.io/ask/) feature.
+- Documents are loaded into memory and no managed vector database is used, so very large corpora are not supported out of the box. Adopting a vector DB should be straightforward given the repository interfaces.
+- The app processes documents locally and relies on no external services **except the Google Gemini API**.
+- The core RAG logic draws on my completed implementation of the Boot.dev course [Learn Retrieval Augmented Generation](https://www.boot.dev/courses/learn-retrieval-augmented-generation); see [lywgit/bootdev-rag](https://github.com/lywgit/bootdev-rag). Notable differences here include:
+	1. A complete server-side redesign using a layered architecture.
+	2. Chinese tokenization via Jieba.
+	3. No chunking for now; documents are indexed as-is.
+- This project was built with advice from AI tools, but it was not written by an autonomous AI agent. Portions of this README were AI‑assisted.
+
+## Customization Tips
+
+If you wish to try it out on your own documents, here are a few tips and considerations.
+
+### Configuration 
+
+Set up the `.env` file:
+1. `INDEX_JSON_URL`: Point it to your documents. For example, I use the site-generated [`index.json`](https://lywgit.github.io/index.json) produced by Hugo (Congo theme).
+2. `GEMINI_API_KEY`: Required to use the Gemini API for text generation.
+
+All configuration is handled in [`app/core/config.py`](app/core/config.py), where you can also see defaults like `DEFAULT_GEMINI_MODEL`.
+
+### Document and Parser
+
+Update the `load_documents` function in [`parser.py`](app/infrastructure/ingestion/parser.py) to match your document format. The only requirement is to return a list of `Document` objects as defined in [`app/domain/models.py`](app/domain/models.py).
+```python
+class Document(BaseModel):
+    id: str
+    content: str
+    metadata: dict  # Note: not really used in current implementation
+```
+
+### Deployment and Security
+
+- The service can be containerized (for example, using this [`Dockerfile`](Dockerfile)) for deployment.
+- I push the image to Google Artifact Registry and deploy it to Google Cloud Run.
+- To serve public visitors, the API should have a public-facing endpoint. I front it with Google API Gateway using this [OpenAPI configuration](openapi-run.yaml), which provides basic rate limiting to help prevent abuse.
 
 
 ## Features
@@ -162,15 +201,4 @@ curl -s -X POST http://localhost:8000/query/rag \
 
 - On startup, the app loads `INDEX_JSON_URL` and builds indexes; failures are logged and surface during readiness.
 - For AMD64 builds, PyTorch CPU wheels are larger than ARM; Docker image size varies accordingly.
-
-
-## Author's Note
-
-- This project was built with extensive help from AI's advices, but it was not written by an AI agent.
-- Most of this document was AI-assisted.
-- The core RAG logic draws on my completed implementation of the Boot.dev course [Learn Retrieval Augmented Generation](https://www.boot.dev/courses/learn-retrieval-augmented-generation), see: [lywgit/bootdev-rag](https://github.com/lywgit/bootdev-rag). Notable changes in this repository include:
-	1. A complete server-side redesign using a layered architecture.
-	2. Chinese tokenization via Jieba.
-	3. No chunking; documents are indexed as-is.
-- This app does not use a managed vector database, so it won’t handle very large corpora out of the box. Adopting a vector DB is hopefully straightforward given the repository interface design.
 
