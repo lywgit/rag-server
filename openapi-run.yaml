@@ -18,10 +18,11 @@ x-google-backend:
   protocol: h2
   jwt_audience: https://rag-server-790356636638.asia-east1.run.app
 
-# CORS setup that allow Options requests (no use in this case)
-x-google-endpoints:
-  - name: "gateway-asia-a331xntq.an.gateway.dev"
-    allowCors: True
+# CORS setup that allow Options requests 
+# - Not used because need to explicitly define OPTIONS method in paths)
+# x-google-endpoints:
+#   - name: "gateway-asia-a331xntq.an.gateway.dev"
+#     allowCors: True
 
 # Quota and limits
 x-google-management:
@@ -118,8 +119,7 @@ definitions:
 
 # path templates
 paths:
-  # The Cloud Run backend needs JWT even for OPTIONS requests
-  # Therefore explicitly define a catch-all OPTIONS path
+  # Explicitly define a catch-all OPTIONS path
   /{relative_path=**}: # Catch-all path for CORS preflight
     parameters:
       - in: path
@@ -129,11 +129,6 @@ paths:
     options:
       summary: Global CORS preflight for all queries
       operationId: globalQueryCors
-      security: []  # Disable Auth
-      x-google-backend:
-        address: https://rag-server-790356636638.asia-east1.run.app
-        path_translation: APPEND_PATH_TO_ADDRESS
-        jwt_audience: https://rag-server-790356636638.asia-east1.run.app  # Still require valid JWT
       responses: 
         '204':
           description: Preflight OK
